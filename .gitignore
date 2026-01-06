@@ -1,0 +1,5 @@
+.env
+/Vagrant/*
+*.docx
+*.bat
+/SupplementScripts/*
