@@ -1,5 +1,7 @@
+__pycache__/
+SupplementScripts/
+VagrantUpdateBox/
+Vagrant/
 .env
-/Vagrant/*
 *.docx
 *.bat
-/SupplementScripts/*
