@@ -14,7 +14,7 @@ vm_running = False
 
 # Accept arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--interactive", action="store_true", help="Run interactively")
+parser.add_argument("-i", "--interactive", action = "store_true", help = "Run interactively")
 args = parser.parse_args()
 
 # Read in ENV file. See .env.template for example

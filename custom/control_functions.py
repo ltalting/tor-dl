@@ -1,7 +1,10 @@
 import time
+from sys import exit
 from subprocess import CalledProcessError, PIPE, Popen as p_open, STDOUT
 from pathlib import Path
+from typing import Optional
 from custom.log_util import log_msg
+from .la_vista_baby import exit_script_with_code
 
 # Execute shell commands safely. This is used to execute Vagrant commands on the host.
 # https://docs.python.org/3/library/subprocess.html#subprocess.run
@@ -76,11 +79,10 @@ def kill_vm(vagrant_dir: Path, vm_running: bool = True):
     else:
         log_msg("VM was not running.", "green")
 
-
 # Exit routine. Will deprov a running vm if deprov_vm is not False. Assumes VM is running if not specified.
-def exit_script(vagrant_dir: Path, exit_code: int = 0, deprov_vm: bool = False, vm_running: bool = True, interactive: bool = False):
+def exit_script(vagrant_dir: Optional[Path] = None, exit_code: int = 0, deprov_vm: bool = False, vm_running: bool = True, interactive: bool = False):
     log_msg("Exiting script...", "blue")
-    if vm_running:
+    if vm_running and vagrant_dir is not None:
         # Interactive mode will ask for this
         if interactive:
             selection_pending = True
@@ -106,4 +108,4 @@ def exit_script(vagrant_dir: Path, exit_code: int = 0, deprov_vm: bool = False, 
             log_msg("Press Enter key to close...", "blue")
             input()
     log_msg("Smell ya later!", "cyan")
-    exit(exit_code)
+    exit_script_with_code(exit_code)
