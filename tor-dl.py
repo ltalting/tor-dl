@@ -17,12 +17,15 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--interactive", action="store_true", help="Run interactively")
 args = parser.parse_args()
 
+# Read in ENV file. See .env.template for example
 parse_env_file(Path(".env"))
 
+# Load in env-defined paths and values
 try:
     # Local paths
     vagrant_dir = Path(os.environ.get("VAGRANT_DIR")) # vagrant-managed/hypervised directory
     torrent_files_dir = Path(os.environ.get("TORRENT_FILES_DIR")) # path to .torrent files
+    magnet_links_file = Path(os.environ.get("MAGNET_LINKS_FILE"))
     local_downloads_dir = Path(os.environ.get("LOCAL_DOWNLOADS_DIR")) # where to store downloaded and scanned torrents
     # Remote paths
     remote_data_path = str(os.environ.get("REMOTE_DATA_PATH")) # path to FTP directory - ftpuser must have permissions to use this folder
@@ -66,16 +69,21 @@ log_msg("VM started and configured successfully.", "green")
 
 # Get list of local .torrent files
 local_torrent_file_paths = list(torrent_files_dir.glob("*.torrent"))
-local_torrent_file_names = [path_object.name for path_object in local_torrent_file_paths]
+magnet_links = []
+with open(magnet_links_file) as file:
+    for line in file:
+        if len(line.strip()) > 0:
+            magnet_links.append(line.strip())
 # If no .torrent files, exit okay no delete
-if not local_torrent_file_paths:
-    log_msg(f"No .torrent files existed in directory '{torrent_files_dir}'. Assuming testing.", "yellow")
+if not local_torrent_file_paths and len(magnet_links) <= 0:
+    log_msg(f"No .torrent files existed in directory '{torrent_files_dir}'. No magnets existed in '{magnet_links_file}'. Assuming testing.", "yellow")
     exit_script(
         vagrant_dir = vagrant_dir,
         exit_code = 0,
         vm_running = vm_running,
         interactive = args.interactive
     )
+local_torrent_file_names = [path_object.name for path_object in local_torrent_file_paths]
 
 vpn_port = False
 if args.interactive:
@@ -83,8 +91,14 @@ if args.interactive:
     # Ask until we get a "y" or an "n" in the response
     while selection_pending:
         log_msg("Do you want to continue with downloading the following?", "blue")
-        for file_name in local_torrent_file_names:
-            log_msg(f"  - {file_name}", "yellow")
+        if len(local_torrent_file_names) > 0:
+            log_msg("Torrent files:", "blue")
+            for file_name in local_torrent_file_names:
+                log_msg(f"  - {file_name}", "yellow")
+        if len(magnet_links) > 0:
+            log_msg("Magnet links:", "blue")
+            for magnet_link in magnet_links:
+                log_msg(f"  - {magnet_link}", "yellow")
         selection = input("Enter your answer (y/n): ").strip().lower()
         if "y" in selection:
             break
@@ -98,17 +112,39 @@ if args.interactive:
         else:
             log_msg(f"Invalid selection '{selection}'. Please try again or exit the script via Ctrl-C.", "yellow", 1)
     selection_pending = True
-    # Ask until we get a "y" or an "n" in the response
+    # Prompt for port
     while selection_pending:
         selection = input("VPN Port: ").strip().lower()
         if len(selection) > 0:
-            vpn_port = int(selection.strip())
+            try:
+                vpn_port = int(selection.strip())
+            except (TypeError, ValueError) as e:
+                log_msg("Bad type received, please provide an integer.", "red")
+                continue
             break
         else:
             vpn_port=""
             break
 
-log_msg("Uploading torrent file(s) via FTP...", "blue")
+# Initialize tor_start_commands list
+torrent_start_cmds=[]
+
+# Magnets first
+for magnet in magnet_links:
+    tor_start = [
+        "vagrant",
+        "ssh",
+        "-c",
+        f"sudo -u {ftp_user} transmission-cli -u 0 -w {remote_data_path} '{magnet}'"
+    ]
+    if vpn_port:
+        tor_start = [
+            "vagrant",
+            "ssh",
+            "-c",
+            f"sudo -u {ftp_user} transmission-cli -p {vpn_port} -u 0 -w {remote_data_path} '{magnet}'"
+        ]
+    torrent_start_cmds.append(tor_start) 
 
 # Connect to FTP
 ftp = connect_ftp(
@@ -132,7 +168,6 @@ if ftp == None:
 # Ensure passive mode. Windows quirk.
 ftp.set_pasv(True)
 
-torrent_start_cmds=[]
 # Loop through files
 for local_tor_file_path in local_torrent_file_paths:
     with open(local_tor_file_path, "rb") as f:
@@ -193,7 +228,7 @@ except CalledProcessError:
     )
 
 # mkdir for downloads if dir does not exist
-local_downloads_dir.mkdir(exist_ok=True)
+local_downloads_dir.mkdir(exist_ok = True)
 
 # Retrieve files from VM to host
 log_msg("Retrieving clean files from VM...", "blue")
