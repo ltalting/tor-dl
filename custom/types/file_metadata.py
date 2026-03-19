@@ -14,7 +14,6 @@ class FileMetadata(FilesystemArtifact):
         merged_dict["size_in_bytes"] = self.size_in_bytes
         return merged_dict
 
-
     def __post_init__(self) -> None:
         super().__post_init__()
         if not self.path.is_file():

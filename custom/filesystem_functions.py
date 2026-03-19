@@ -1,9 +1,15 @@
+import re
 from pathlib import Path
 from typing import Optional, Callable, Union
 from .log_util import log_msg
 from .types.file_metadata import FileMetadata
 from .types.directory_metadata import DirectoryMetadata
 from .types.path_like import PathLike
+from .types.file_like import FileLike
+from .types.video_file_metadata import VideoFileMetadata
+
+text_extensions = {".txt", ".py", ".log"}
+video_extensions = {".mkv", ".avi", ".mp4"}
 
 # Check existence/return target type flag
 def _exists(target: PathLike) -> Optional[dict[str, PathLike]]:
@@ -20,15 +26,18 @@ def count_file_lines(file_path: PathLike):
     return line_count
 
 # Get file metadata
-def get_file(file_path: PathLike) -> FileMetadata:
-    return FileMetadata(file_path)
+def get_file(file_path: PathLike) -> FileLike:
+    file = FileMetadata(file_path)
+    if file.extension in video_extensions:
+        file.__class__ = VideoFileMetadata
+    return file
 
 # Get directory metadata
 def get_directory(dir_path: PathLike) -> DirectoryMetadata:
     return DirectoryMetadata(dir_path)
 
 # Get file or directory metadata
-def get_path(target: PathLike) -> Union[FileMetadata, DirectoryMetadata]:
+def get_path(target: PathLike) -> Union[FileLike, DirectoryMetadata]:
     path = _exists(target)
     if not path:
         raise FileNotFoundError(f"Path does not exist: {target}")
@@ -41,12 +50,17 @@ def get_path(target: PathLike) -> Union[FileMetadata, DirectoryMetadata]:
 # Print file lines and contents to cli
 def print_file(file_path: PathLike) -> None:
     file = get_file(file_path)
-    line_count = count_file_lines(file.path)
-    pad_width = len(str(line_count)) + 2
-    with file.path.open("r", encoding = "utf-8", errors = "replace") as opened_file:
-        for line_number, line in enumerate(opened_file, start = 1):
-            padded_line_number = str(line_number).ljust(pad_width, ' ')
-            log_msg(f"{padded_line_number}{line.rstrip()}")
+    if file.extension in text_extensions:
+        line_count = count_file_lines(file.path)
+        pad_width = len(str(line_count)) + 2
+        with file.path.open("r", encoding = "utf-8", errors = "replace") as opened_file:
+            for line_number, line in enumerate(opened_file, start = 1):
+                padded_line_number = str(line_number).ljust(pad_width, ' ')
+                log_msg(f"{padded_line_number}{line.rstrip()}")
+    elif file.extension in video_extensions:
+        log_msg("VIDEO FILE DETECTED: print_file() not implemented.", "yellow")
+    else:
+        log_msg(f"ERROR: File with extension {file.extension} is not printable", "red", 1)
 
 # Print dir files and subdirs
 def print_directory(dir_path: PathLike, indent: int = 0) -> None:

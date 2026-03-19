@@ -13,30 +13,39 @@ try:
     video_fs_dir = Path(environ.get("VIDEO_FS_DIR"))
     magnet_links_file = Path(environ.get("MAGNET_LINKS_FILE"))
     tor_dl_script_file = Path(environ.get("TOR_DL_SCRIPT_FILE"))
+    vid_file = Path(environ.get("VID_FILE"))
 except Exception as e:
     log_msg("ERROR: " + str(e), "red", exit = 1)
 dir_local_downloads = get_path(local_downloads_dir)
 dir_video_fs = get_path(video_fs_dir)
 file_magnet_links = get_path(magnet_links_file)
 file_tor_dl = get_path(tor_dl_script_file)
+file_vid = get_path(vid_file)
 
-#print_path(dir_local_downloads.path)
-#print_path(dir_video_fs.path)
+# print(dir_local_downloads)
+# print(dir_video_fs)
+# print(file_magnet_links)
+# # print(file_tor_dl)
+print(file_vid)
+# print_path(file_vid.path)
+
+# print_path(dir_local_downloads.path)
+# print_path(dir_video_fs.path)
 # print_path(file_magnet_links.path)
-print_path(file_tor_dl.path)
+# print_path(file_tor_dl.path)
 
 # types:
 #  movies
 #  tvshows
 #  ...
-class Movie:
-    name: str
-    year: str
+# class Movie:
+#     name: str
+#     year: str
 
-class TvShow:
-    name: str
-    start_year: str
-    end_year: str
+# class TvShow:
+#     name: str
+#     start_year: str
+#     end_year: str
 
 # check naming based on type
 # movies = title [year]
