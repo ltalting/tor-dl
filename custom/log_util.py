@@ -38,7 +38,7 @@ def log_msg(message = "", color = None, indent = None, stream = "stdout", exit: 
         else:
             # Log warning if color not found
             log_msg("CRITICAL ERROR: Color did not exist.", "critical")
-    indentation=""
+    indentation = ""
     # Handle indentation only if indentation is specified
     # Indentation is specified per-level i.e. 1 = 2 space, 2 = 4 space, 3 = 6 space, etc...
     if indent:
