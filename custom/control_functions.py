@@ -1,14 +1,13 @@
 import time
-from sys import exit
 from subprocess import CalledProcessError, PIPE, Popen as p_open, STDOUT
 from pathlib import Path
-from typing import Optional
+from typing import NoReturn, Optional
 from custom.log_util import log_msg
 from .la_vista_baby import exit_script_with_code
 
 # Execute shell commands safely. This is used to execute Vagrant commands on the host.
 # https://docs.python.org/3/library/subprocess.html#subprocess.run
-def run_cmd(cmd, working_dir = None, timeout = None, exit_on_error = True):
+def run_cmd(cmd, working_dir = None, timeout = None, exit_on_error = True) -> p_open[str]:
     try:
         # Initialize return code None
         return_code = None
@@ -66,7 +65,7 @@ def run_cmd(cmd, working_dir = None, timeout = None, exit_on_error = True):
 
 
 # Kill VM method
-def kill_vm(vagrant_dir: Path, vm_running: bool = True):
+def kill_vm(vagrant_dir: Path, vm_running: bool = True) -> NoReturn:
     # Destroy only if vm_running
     if vm_running:
         log_msg("Destroying VM...", "blue")
@@ -80,7 +79,12 @@ def kill_vm(vagrant_dir: Path, vm_running: bool = True):
         log_msg("VM was not running.", "green")
 
 # Exit routine. Will deprov a running vm if deprov_vm is not False. Assumes VM is running if not specified.
-def exit_script(vagrant_dir: Optional[Path] = None, exit_code: int = 0, deprov_vm: bool = False, vm_running: bool = True, interactive: bool = False):
+def exit_script(exit_code: int = 0) -> NoReturn:
+    log_msg("Smell ya later!", "cyan")
+    exit_script_with_code(exit_code)
+
+# Exit routine. Will deprov a running vm if deprov_vm is not False. Assumes VM is running if not specified.
+def exit_tor_dl(vagrant_dir: Optional[Path] = None, exit_code: int = 0, deprov_vm: bool = False, vm_running: bool = True, interactive: bool = False) -> NoReturn:
     log_msg("Exiting script...", "blue")
     if vm_running and vagrant_dir is not None:
         # Interactive mode will ask for this
@@ -107,5 +111,4 @@ def exit_script(vagrant_dir: Optional[Path] = None, exit_code: int = 0, deprov_v
         if interactive:
             log_msg("Press Enter key to close...", "blue")
             input()
-    log_msg("Smell ya later!", "cyan")
-    exit_script_with_code(exit_code)
+    exit_script(exit_code)

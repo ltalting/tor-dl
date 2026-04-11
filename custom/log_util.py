@@ -1,7 +1,7 @@
 import sys
 from random import randint
 from typing import Optional
-from .la_vista_baby import exit_script_with_code, check_code
+from .la_vista_baby import exit_script_with_code
 from .common_functs import dict_values_to_keys
 
 # Log message method
@@ -51,7 +51,5 @@ def log_msg(message = "", color = None, indent = None, stream = "stdout", exit: 
         print(message, file = sys.stderr, **kwargs)
     
     if exit:
-        if check_code(exit):
-            exit_script_with_code(exit)
-        else:
-            log_msg(f"CRITICAL ERROR: Exit code '{exit}' is invalid.", "critical", exit = 1)
+        log_msg("Smell ya later!", "cyan")
+        exit_script_with_code(exit)

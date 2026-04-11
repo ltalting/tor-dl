@@ -14,7 +14,7 @@ def connect_ftp(ftp_host: str, ftp_user: str, ftp_pass: str, ftp_conn_retries: i
     for attempt in range(1, ftp_conn_retries + 1):
         try:
             log_msg(f"Attempt {attempt} to connect to FTP server...", "blue", 1)
-            ftp = FTP(ftp_host, timeout=ftp_timeout)
+            ftp = FTP(ftp_host, timeout = ftp_timeout)
             ftp.login(user = ftp_user, passwd = ftp_pass)
             ftp.set_pasv(True)
             log_msg("Connected and logged in successfully.", "green", 2)
@@ -46,7 +46,7 @@ def is_directory_ftp(ftp_conn: FTP, file_name: str):
 def download_ftp_tree(ftp_conn: FTP, remote_path, local_path):
     # Ensure local path is present; make it if it is not
     local_path = Path(local_path)
-    local_path.mkdir(parents=True, exist_ok=True)
+    local_path.mkdir(parents = True, exist_ok = True)
     # List files at remote_path
     # Print error and return when error occurs (usually if remote_path is not a directory)
     try:

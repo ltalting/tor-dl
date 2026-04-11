@@ -7,9 +7,11 @@ from .types.directory_metadata import DirectoryMetadata
 from .types.path_like import PathLike
 from .types.file_like import FileLike
 from .types.video_file_metadata import VideoFileMetadata
+from .types.link_file_metadata import LinkFileMetadata
 
 text_extensions = {".txt", ".py", ".log"}
 video_extensions = {".mkv", ".avi", ".mp4"}
+link_extensions = {".lnk"}
 
 # Check existence/return target type flag
 def _exists(target: PathLike) -> Optional[dict[str, PathLike]]:
@@ -25,11 +27,22 @@ def count_file_lines(file_path: PathLike):
         line_count = sum(1 for line in f)
     return line_count
 
+# Basis identity properties preload
+def preload_file(file_path: PathLike) -> dict:
+    return {
+        "path": file_path,
+        "extension": Path(file_path).suffix
+    }
+
 # Get file metadata
 def get_file(file_path: PathLike) -> FileLike:
-    file = FileMetadata(file_path)
-    if file.extension in video_extensions:
-        file.__class__ = VideoFileMetadata
+    file = preload_file(file_path)
+    if file["extension"] in video_extensions:
+        file = VideoFileMetadata(**file)
+    elif file["extension"] in link_extensions:
+        file = LinkFileMetadata(**file)
+    else:
+        file = FileMetadata(**file)
     return file
 
 # Get directory metadata

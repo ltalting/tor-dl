@@ -3,11 +3,13 @@ import os
 from pathlib import Path
 from shlex import quote
 from subprocess import CalledProcessError
+from typing import Optional
 
-from custom.control_functions import exit_script, run_cmd
+from custom.control_functions import exit_tor_dl, run_cmd
 from custom.ftp_conn import connect_ftp, download_ftp_tree
 from custom.log_util import log_msg
 from custom.parsers import parse_env_file
+from custom.question_master import ask_question
 
 # Keep track of whether VM is running or not
 vm_running = False
@@ -40,7 +42,7 @@ try:
     retry_delay = int(os.environ.get("RETRY_DELAY")) # Seconds
 except Exception as e:
     log_msg("ERROR: " + str(e), "red")
-    exit_script(
+    exit_tor_dl(
         vagrant_dir = vagrant_dir,
         exit_code = 1,
         vm_running = vm_running,
@@ -52,7 +54,7 @@ ftp = None
 
 # Interactive or non?
 if args.interactive:
-    name = input("Enter your name: ")
+    name = ask_question("Enter your name: ")
     log_msg(f"Enjoy the downloads, {name}.", "magenta")
 else:
     log_msg("Non-interactive mode", "magenta")
@@ -77,7 +79,7 @@ with open(magnet_links_file) as file:
 # If no .torrent files, exit okay no delete
 if not local_torrent_file_paths and len(magnet_links) <= 0:
     log_msg(f"No .torrent files existed in directory '{torrent_files_dir}'. No magnets existed in '{magnet_links_file}'. Assuming testing.", "yellow")
-    exit_script(
+    exit_tor_dl(
         vagrant_dir = vagrant_dir,
         exit_code = 0,
         vm_running = vm_running,
@@ -85,49 +87,39 @@ if not local_torrent_file_paths and len(magnet_links) <= 0:
     )
 local_torrent_file_names = [path_object.name for path_object in local_torrent_file_paths]
 
-vpn_port = False
+vpn_port: Optional[int] = None
 if args.interactive:
-    selection_pending = True
-    # Ask until we get a "y" or an "n" in the response
-    while selection_pending:
-        log_msg("Do you want to continue with downloading the following?", "blue")
-        if len(local_torrent_file_names) > 0:
-            log_msg("Torrent files:", "blue")
-            for file_name in local_torrent_file_names:
-                log_msg(f"  - {file_name}", "yellow")
-        if len(magnet_links) > 0:
-            log_msg("Magnet links:", "blue")
-            for magnet_link in magnet_links:
-                log_msg(f"  - {magnet_link}", "yellow")
-        selection = input("Enter your answer (y/n): ").strip().lower()
-        if "y" in selection:
-            break
-        elif "n" in selection:
-            exit_script(
-                vagrant_dir = vagrant_dir,
-                exit_code = 0,
-                vm_running = vm_running,
-                interactive = args.interactive
-            )
-        else:
-            log_msg(f"Invalid selection '{selection}'. Please try again or exit the script via Ctrl-C.", "yellow", 1)
-    selection_pending = True
-    # Prompt for port
-    while selection_pending:
-        selection = input("VPN Port: ").strip().lower()
+    log_msg("Do you want to continue with downloading the following?", "blue")
+    if len(local_torrent_file_names) > 0:
+        log_msg("Torrent files:", "blue")
+        for file_name in local_torrent_file_names:
+            log_msg(f"  - {file_name}", "yellow")
+    if len(magnet_links) > 0:
+        log_msg("Magnet links:", "blue")
+        for magnet_link in magnet_links:
+            log_msg(f"  - {magnet_link}", "yellow")
+    selection = ask_question("Enter your answer:", ["y", "n"])
+    if "y" in selection:
+        selection
+    elif "n" in selection:
+        exit_tor_dl(
+            vagrant_dir = vagrant_dir,
+            exit_code = 0,
+            vm_running = vm_running,
+            interactive = args.interactive
+        )
+    while True:
+        selection = ask_question("VPN Port: ")
         if len(selection) > 0:
             try:
                 vpn_port = int(selection.strip())
             except (TypeError, ValueError) as e:
                 log_msg("Bad type received, please provide an integer.", "red")
                 continue
-            break
-        else:
-            vpn_port=""
-            break
+        break
 
 # Initialize tor_start_commands list
-torrent_start_cmds=[]
+torrent_start_cmds = []
 
 # Magnets first
 for magnet in magnet_links:
@@ -158,7 +150,7 @@ ftp = connect_ftp(
 
 # Exit script if FTP connection not returned
 if ftp == None:
-    exit_script(
+    exit_tor_dl(
         vagrant_dir = vagrant_dir,
         exit_code = 1,
         vm_running = vm_running,
@@ -218,9 +210,10 @@ scan_cmd = [
 try:
     run_cmd(cmd = scan_cmd, working_dir = vagrant_dir, exit_on_error = False)
     log_msg("All files passed virus scan.", "green")
-except CalledProcessError:
+except CalledProcessError as cpe:
     log_msg("VIRUS DETECTED! Aborting and destroying VM.", "red")
-    exit_script(
+    log_msg(str(cpe.output))
+    exit_tor_dl(
         vagrant_dir = vagrant_dir,
         exit_code = 1,
         vm_running = vm_running,
@@ -245,7 +238,7 @@ ftp = connect_ftp(
 
 # Exit script if FTP connection not returned
 if ftp == None:
-    exit_script(
+    exit_tor_dl(
         vagrant_dir = vagrant_dir,
         exit_code = 1,
         vm_running = vm_running,
@@ -257,7 +250,7 @@ download_ftp_tree(ftp, ftp_user_remote_data_path, local_downloads_dir)
 
 log_msg("All files retrieved successfully.", "green")
 
-exit_script(
+exit_tor_dl(
     vagrant_dir = vagrant_dir,
     exit_code = 0,
     vm_running = vm_running,

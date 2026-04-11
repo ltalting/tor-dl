@@ -19,7 +19,8 @@ class FileMetadata(FilesystemArtifact):
         if not self.path.is_file():
             raise ValueError(f"Not a file: {str(self.path)}")
         # File extension
-        self.extension = self.path.suffix
+        if self.extension == "unknown":
+            self.extension = self.path.suffix
         # File size
         self.size_in_bytes = self.path.stat().st_size
     
