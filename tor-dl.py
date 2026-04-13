@@ -5,11 +5,11 @@ from shlex import quote
 from subprocess import CalledProcessError
 from typing import Optional
 
-from custom.control_functions import exit_tor_dl, run_cmd
-from custom.ftp_conn import connect_ftp, download_ftp_tree
-from custom.log_util import log_msg
-from custom.parsers import parse_env_file
-from custom.question_master import ask_question
+from custom_shared.control_functions import exit_tor_dl, run_cmd
+from custom_shared.ftp_conn import connect_ftp, download_ftp_tree
+from custom_shared.log_util import log_msg
+from custom_shared.parsers import parse_env_file
+from custom_shared.question_master import ask_question
 
 # Keep track of whether VM is running or not
 vm_running = False

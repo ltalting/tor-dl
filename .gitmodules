@@ -1,0 +1,4 @@
+[submodule "custom_shared"]
+	path = custom_shared
+	url = https://github.com/ltalting/my-custom-py-lib.git
+	branch = main
